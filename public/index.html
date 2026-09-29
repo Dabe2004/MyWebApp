@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>My WebApp</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>My WebApp using Node.js, Express, and Supabase</h1>
+
+  <input type="text" id="messageInput" placeholder="Type a message">
+  <button onclick="addMessage()">Send</button>
+
+  <ul id="messageList"></ul>
+
+  <script>
+    const API_URL = 'http://localhost:3000/api/messages';
+
+    async function loadMessages() {
+      const res = await fetch(API_URL);
+      const messages = await res.json();
+
+      const list = document.getElementById('messageList');
+      list.innerHTML = '';
+
+      messages.forEach(msg => {
+        const li = document.createElement('li');
+        li.id = `message-${msg.id}`;
+
+        const span = document.createElement('span');
+        span.textContent = `${msg.id}: ${msg.text}`;
+
+        const editBtn = document.createElement('button');
+        editBtn.textContent = 'Edit';
+        editBtn.className = 'edit-btn';
+        editBtn.onclick = () => showEditForm(msg.id, msg.text);
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.onclick = () => deleteMessage(msg.id);
+
+        li.appendChild(span);
+        li.appendChild(editBtn);
+        li.appendChild(deleteBtn);
+        list.appendChild(li);
+      });
+    }
+
+    async function addMessage() {
+      const input = document.getElementById('messageInput');
+      const text = input.value;
+
+      if (!text) return;
+
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+      });
+
+      input.value = '';
+      loadMessages();
+    }
+
+    function showEditForm(id, currentText) {
+      const li = document.getElementById(`message-${id}`);
+      li.innerHTML = '';
+
+      const editInput = document.createElement('input');
+      editInput.type = 'text';
+      editInput.value = currentText;
+
+      const saveBtn = document.createElement('button');
+      saveBtn.textContent = 'Save';
+      saveBtn.onclick = () => saveEdit(id, editInput.value);
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.textContent = 'Cancel';
+      cancelBtn.onclick = () => loadMessages();
+
+      li.appendChild(editInput);
+      li.appendChild(saveBtn);
+      li.appendChild(cancelBtn);
+    }
+
+    async function saveEdit(id, newText) {
+      if (!newText) return;
+
+      await fetch(`${API_URL}/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: newText })
+      });
+
+      loadMessages();
+    }
+
+    async function deleteMessage(id) {
+      const confirmed = confirm('Delete this message?');
+      if (!confirmed) return;
+
+      await fetch(`${API_URL}/${id}`, {
+        method: 'DELETE'
+      });
+
+      loadMessages();
+    }
+
+    loadMessages();
+  </script>
+</body>
+</html>
